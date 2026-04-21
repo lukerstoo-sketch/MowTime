@@ -47,18 +47,35 @@ function buildVerdict(daysSince, best) {
       : bestDate.toLocaleDateString([], { weekday: "long" });
 
   if (daysSince === null) {
-    return `The best upcoming mowing conditions arrive ${bestDayLabel}.`;
+    return (
+      <>
+      The best upcoming mowing conditions arrive{" "} <strong>${bestDayLabel}.</strong>
+      </>
+    );
   }
 
   if (daysSince <= 2) {
-    return `You probably do not need to mow yet, but <strong>${bestDayLabel} offers the best upcoming conditions.</strong>`;
+    return (
+      <>
+      You probably do not need to mow yet, but{" "} 
+      <strong>${bestDayLabel} offers the best upcoming conditions.</strong>
+      </>
+    );
   }
 
   if (daysSince <= 5) {
-    return `You will likely need to mow soon, and ${bestDayLabel} gives you a good opportunity.`;
+    return (
+      <>
+     You will likely need to mow soon, and{" "} <strong>${bestDayLabel} gives you a good opportunity.</strong> 
+      </>
+    );
   }
 
-  return `Your lawn is likely overdue, so taking advantage of ${bestDayLabel}'s conditions is a good idea.`;
+  return (
+    <>
+    Your lawn is likely overdue, so{" "} <strong>taking advantage of ${bestDayLabel}'s conditions is a good idea.</strong>
+    </>
+  ); 
 }
 
 export default function HomePage() {
