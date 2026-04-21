@@ -49,7 +49,7 @@ function buildVerdict(daysSince, best) {
   if (daysSince === null) {
     return (
       <>
-      The best upcoming mowing conditions arrive{" "} <strong>${bestDayLabel}.</strong>
+      The best upcoming mowing conditions arrive{" "} <strong>{bestDayLabel}.</strong>
       </>
     );
   }
@@ -58,7 +58,7 @@ function buildVerdict(daysSince, best) {
     return (
       <>
       You probably do not need to mow yet, but{" "} 
-      <strong>${bestDayLabel} offers the best upcoming conditions.</strong>
+      <strong>{bestDayLabel} offers the best upcoming conditions.</strong>
       </>
     );
   }
@@ -66,14 +66,14 @@ function buildVerdict(daysSince, best) {
   if (daysSince <= 5) {
     return (
       <>
-     You will likely need to mow soon, and{" "} <strong>${bestDayLabel} gives you a good opportunity.</strong> 
+     You will likely need to mow soon, and{" "} <strong>{bestDayLabel} gives you a good opportunity.</strong> 
       </>
     );
   }
 
   return (
     <>
-    Your lawn is likely overdue, so{" "} <strong>taking advantage of ${bestDayLabel}'s conditions is a good idea.</strong>
+    Your lawn is likely overdue, so{" "} <strong>taking advantage of {bestDayLabel}'s conditions is a good idea.</strong>
     </>
   ); 
 }
