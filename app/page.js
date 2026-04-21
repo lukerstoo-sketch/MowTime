@@ -61,33 +61,20 @@ export default function HomePage() {
           const lat = position.coords.latitude;
           const lon = position.coords.longitude;
   
-          const geoRes = await fetch(
-            `https://geocoding-api.open-meteo.com/v1/reverse?latitude=${lat}&longitude=${lon}&language=en&format=json`
-          );
-  
-          const geoData = await geoRes.json();
-          const place = geoData.results?.[0];
-  
-          if (place) {
-            const label = `${place.name}${place.admin1 ? ", " + place.admin1 : ""}${
-              place.country ? ", " + place.country : ""
-            }`;
-  
-            setQuery(place.name);
-            setPlaceName(label);
-          } else {
-            setPlaceName(`Lat ${lat.toFixed(2)}, Lon ${lon.toFixed(2)}`);
-          }
+          setQuery("Current location");
+          setPlaceName(`Lat ${lat.toFixed(2)}, Lon ${lon.toFixed(2)}`);
   
           const mowRes = await fetch(`/api/mow?lat=${lat}&lon=${lon}`);
-          const mowData = await mowRes.json();
   
           if (!mowRes.ok) {
-            throw new Error(mowData.error || "Failed to get mowing forecast");
+            const text = await mowRes.text();
+            throw new Error(`API error: ${text}`);
           }
   
+          const mowData = await mowRes.json();
           setResult(mowData);
         } catch (err) {
+          console.error("Location fetch error:", err);
           setError(err.message || "Unable to use your current location.");
         } finally {
           setLocationLoading(false);
@@ -96,10 +83,19 @@ export default function HomePage() {
       (geoError) => {
         if (geoError.code === 1) {
           setError("Location access was denied.");
+        } else if (geoError.code === 2) {
+          setError("Location is unavailable.");
+        } else if (geoError.code === 3) {
+          setError("Location request timed out.");
         } else {
           setError("Could not get your location.");
         }
         setLocationLoading(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
       }
     );
   }
