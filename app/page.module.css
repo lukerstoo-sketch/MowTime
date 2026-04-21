@@ -264,7 +264,7 @@
       border-radius: 16px;
     }
 
-    input[type="date"] {
+    .input[type="date"] {
       background: white;
       color: #333;
     }
