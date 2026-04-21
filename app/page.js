@@ -3,6 +3,8 @@
 import styles from "./page.module.css";
 import { useState } from "react";
 
+const [locationLoading, setLocationLoading] = useState(false);
+
 function formatSmartDate(iso) {
   const date = new Date(iso);
   const today = new Date();
@@ -43,6 +45,65 @@ export default function HomePage() {
   const [result, setResult] = useState(null);
   const [placeName, setPlaceName] = useState("");
   const [error, setError] = useState("");
+
+  async function getCurrentLocation() {
+    if (!navigator.geolocation) {
+      setError("Your browser does not support location access.");
+      return;
+    }
+  
+    setLocationLoading(true);
+    setError("");
+    setResult(null);
+  
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+  
+          const geoRes = await fetch(
+            `https://geocoding-api.open-meteo.com/v1/reverse?latitude=${lat}&longitude=${lon}&language=en&format=json`
+          );
+  
+          const geoData = await geoRes.json();
+          const place = geoData.results?.[0];
+  
+          if (place) {
+            const label = `${place.name}${place.admin1 ? ", " + place.admin1 : ""}${
+              place.country ? ", " + place.country : ""
+            }`;
+  
+            setQuery(place.name);
+            setPlaceName(label);
+          } else {
+            setPlaceName(`Lat ${lat.toFixed(2)}, Lon ${lon.toFixed(2)}`);
+          }
+  
+          const mowRes = await fetch(`/api/mow?lat=${lat}&lon=${lon}`);
+          const mowData = await mowRes.json();
+  
+          if (!mowRes.ok) {
+            throw new Error(mowData.error || "Failed to get mowing forecast");
+          }
+  
+          setResult(mowData);
+        } catch (err) {
+          setError(err.message || "Unable to use your current location.");
+        } finally {
+          setLocationLoading(false);
+        }
+      },
+      (geoError) => {
+        if (geoError.code === 1) {
+          setError("Location access was denied.");
+        } else {
+          setError("Could not get your location.");
+        }
+        setLocationLoading(false);
+      }
+    );
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -99,16 +160,24 @@ export default function HomePage() {
           </p>
   
           <form onSubmit={handleSubmit} className={styles.form}>
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Enter city or ZIP"
-              className={styles.input}
-            />
-            <button type="submit" className={styles.button} disabled={loading}>
-              {loading ? "Checking..." : "Find my mow time"}
-            </button>
-          </form>
+  <input
+    value={query}
+    onChange={(e) => setQuery(e.target.value)}
+    placeholder="Enter city or ZIP"
+    className={styles.input}
+  />
+  <button type="submit" className={styles.button} disabled={loading || locationLoading}>
+    {loading ? "Checking..." : "Find my mow time"}
+  </button>
+  <button
+    type="button"
+    className={styles.secondaryButton}
+    onClick={getCurrentLocation}
+    disabled={loading || locationLoading}
+  >
+    {locationLoading ? "Locating..." : "Use my location"}
+  </button>
+</form>
   
           {error && <div className={styles.error}>{error}</div>}
   
