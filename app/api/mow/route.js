@@ -6,6 +6,7 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const lat = searchParams.get("lat");
     const lon = searchParams.get("lon");
+    const lastMowed = searchParams.get("lastMowed");
 
     if (!lat || !lon) {
       return Response.json({ error: "Missing lat or lon" }, { status: 400 });
@@ -39,7 +40,17 @@ export async function GET(request) {
 
     const weatherData = await weatherRes.json();
     const scored = scoreForecastHours(weatherData.hourly);
-    const windows = groupGoodWindows(scored, 70);
+    const windows = groupGoodWindows(scored, 70, daysSinceMowed);
+    const daysSinceMowed = getDaysSinceMowed(lastMowed);
+
+    function getDaysSinceMowed(lastMowed) {
+      if (!lastMowed) return null;
+    
+      const last = new Date(lastMowed);
+      const now = new Date();
+    
+      return Math.floor((now - last) / (1000 * 60 * 60 * 24));
+    }
 
     return Response.json({
   latitude: weatherData.latitude,

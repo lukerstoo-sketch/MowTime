@@ -66,7 +66,7 @@ export default function HomePage() {
           setQuery("Current location");
           setPlaceName(`Lat ${lat.toFixed(2)}, Lon ${lon.toFixed(2)}`);
   
-          const mowRes = await fetch(`/api/mow?lat=${lat}&lon=${lon}`);
+          const mowRes = await fetch(`/api/mow?lat=${lat}&lon=${lon}&lastMowed=${lastMowed}`);
   
           if (!mowRes.ok) {
             const text = await mowRes.text();
@@ -128,7 +128,7 @@ export default function HomePage() {
       );
 
       const mowRes = await fetch(
-        `/api/mow?lat=${place.latitude}&lon=${place.longitude}`
+        `/api/mow?lat=${place.latitude}&lon=${place.longitude}&lastMowed=${lastMowed}`
       );
       const mowData = await mowRes.json();
 
@@ -198,7 +198,7 @@ export default function HomePage() {
               <strong>Location:</strong> {placeName}
             </p>
           )}
-          
+
   {daysSince !== null && (
   <section className={styles.verdictCard}>
     <h3 className={styles.sectionTitleList}>Do you need to mow?</h3>
