@@ -44,6 +44,8 @@ export default function HomePage() {
   const [placeName, setPlaceName] = useState("");
   const [error, setError] = useState("");
   const [locationLoading, setLocationLoading] = useState(false);
+  const [lastMowed, setLastMowed] = useState("");
+  const daysSince = getDaysSinceMowed();
 
   async function getCurrentLocation() {
     if (!navigator.geolocation) {
@@ -145,6 +147,15 @@ export default function HomePage() {
   const best = result?.windows?.[0];
   const backup = result?.windows?.[1];
 
+  function getDaysSinceMowed() {
+    if (!lastMowed) return null;
+  
+    const last = new Date(lastMowed);
+    const now = new Date();
+  
+    const diff = now - last;
+    return Math.floor(diff / (1000 * 60 * 60 * 24));
+  }
   return (
     <main className={styles.page}>
       <div className={styles.container}>
@@ -172,6 +183,12 @@ export default function HomePage() {
   >
     {locationLoading ? "Locating..." : "Use my location"}
   </button>
+  <input
+    type="date"
+    value={lastMowed}
+    onChange={(e) => setLastMowed(e.target.value)}
+    className={styles.input}
+    />
 </form>
   
           {error && <div className={styles.error}>{error}</div>}
@@ -181,7 +198,18 @@ export default function HomePage() {
               <strong>Location:</strong> {placeName}
             </p>
           )}
-  
+          
+  {daysSince !== null && (
+  <section className={styles.verdictCard}>
+    <h3 className={styles.sectionTitleList}>Do you need to mow?</h3>
+    <p className={styles.reason}>
+      {daysSince <= 2 && "Probably too soon since your last mow."}
+      {daysSince > 2 && daysSince <= 5 && "You might be okay, but it's getting close."}
+      {daysSince > 5 && "You likely need to mow soon."}
+    </p>
+  </section>
+)}
+
   {result?.verdict && (
   <section className={styles.verdictCard}>
     <h3 className={styles.sectionTitleList}>What should you do?</h3>
