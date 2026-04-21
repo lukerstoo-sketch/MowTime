@@ -51,7 +51,7 @@ function buildVerdict(daysSince, best) {
   }
 
   if (daysSince <= 2) {
-    return `You probably do not need to mow yet, but ${bestDayLabel} offers the best upcoming conditions.`;
+    return `You probably do not need to mow yet, but <strong>${bestDayLabel} offers the best upcoming conditions.</strong>`;
   }
 
   if (daysSince <= 5) {
@@ -277,7 +277,7 @@ export default function HomePage() {
 
           {backup && (
             <section className={styles.sectionBackup}>
-              <h2 className={styles.sectionTitleBackup}>Alternative Window</h2>
+              <h2 className={styles.sectionTitleBackup}>Alternative window</h2>
               <p>
                 <strong>{formatSmartDate(backup.start)}</strong> –{" "}
                 <strong>

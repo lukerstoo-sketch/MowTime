@@ -256,3 +256,15 @@
       font-size: 12px;
       color: #888
     }
+
+    .verdictCard {
+      background: #e6f4ea;
+      border: 2px solid #cfe8d6;
+      padding: 16px;
+      border-radius: 16px;
+    }
+
+    input[type="date"] {
+      background: white;
+      color: #333;
+    }
