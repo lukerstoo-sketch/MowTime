@@ -62,7 +62,7 @@ function buildVerdict(daysSince, best) {
 }
 
 export default function HomePage() {
-  const [query, setQuery] = useState("Fort Wayne");
+  const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [placeName, setPlaceName] = useState("");
@@ -197,7 +197,7 @@ export default function HomePage() {
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Enter city or ZIP"
+              placeholder="Enter city or ZIP (e.g. Fort Wayne)"
               className={styles.input}
             />
 
@@ -258,7 +258,7 @@ export default function HomePage() {
 
           {best && (
             <section className={styles.sectionBest}>
-              <h2 className={styles.sectionTitleBest}>Best window</h2>
+              <h2 className={styles.sectionTitleBest}>Recommended window</h2>
               <p>
                 <strong>{formatSmartDate(best.start)}</strong> –{" "}
                 <strong>
@@ -277,7 +277,7 @@ export default function HomePage() {
 
           {backup && (
             <section className={styles.sectionBackup}>
-              <h2 className={styles.sectionTitleBackup}>Backup window</h2>
+              <h2 className={styles.sectionTitleBackup}>Alternative Window</h2>
               <p>
                 <strong>{formatSmartDate(backup.start)}</strong> –{" "}
                 <strong>
