@@ -1,9 +1,7 @@
 "use client";
 
-import styles from "./page.module.css";
 import { useState } from "react";
-
-const [locationLoading, setLocationLoading] = useState(false);
+import styles from "./page.module.css";
 
 function formatSmartDate(iso) {
   const date = new Date(iso);
@@ -45,6 +43,7 @@ export default function HomePage() {
   const [result, setResult] = useState(null);
   const [placeName, setPlaceName] = useState("");
   const [error, setError] = useState("");
+  const [locationLoading, setLocationLoading] = useState(false);
 
   async function getCurrentLocation() {
     if (!navigator.geolocation) {
