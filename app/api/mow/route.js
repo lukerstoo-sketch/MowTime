@@ -39,10 +39,8 @@ export async function GET(request) {
     }
 
     const weatherData = await weatherRes.json();
-    const scored = scoreForecastHours(weatherData.hourly);
-    const windows = groupGoodWindows(scored, 70, daysSinceMowed);
-    const daysSinceMowed = getDaysSinceMowed(lastMowed);
-
+    
+    
     function getDaysSinceMowed(lastMowed) {
       if (!lastMowed) return null;
     
@@ -51,6 +49,11 @@ export async function GET(request) {
     
       return Math.floor((now - last) / (1000 * 60 * 60 * 24));
     }
+    
+    const daysSinceMowed = getDaysSinceMowed(lastMowed);
+
+    const scored = scoreForecastHours(weatherData.hourly);
+    const windows = groupGoodWindows(scored, 70, daysSinceMowed);
 
     return Response.json({
   latitude: weatherData.latitude,

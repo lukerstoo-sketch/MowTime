@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import styles from "./page.module.css";
+import { getMowUrgency } from "@/lib/mowScore";
 
 function formatSmartDate(iso) {
   const date = new Date(iso);
@@ -207,6 +208,12 @@ export default function HomePage() {
       {daysSince > 2 && daysSince <= 5 && "You might be okay, but it's getting close."}
       {daysSince > 5 && "You likely need to mow soon."}
     </p>
+    
+    {daysSince === null && result?.scoredHours && (
+  <p className={styles.reason}>
+    {getMowUrgency(result.scoredHours)}
+  </p>
+)}
   </section>
 )}
 
@@ -217,7 +224,14 @@ export default function HomePage() {
   </section>
 )}
 
-{result?.urgency && (
+
+{daysSince === null && (
+  <p className={styles.reason}>
+    {getMowUrgency(result?.scoredHours)}
+  </p>
+)}
+
+{daysSince === null && result?.urgency && (
   <section className={styles.urgencyCard}>
     <h3 className={styles.sectionTitleList}>Should you mow soon?</h3>
     <p className={styles.reason}>{result.urgency}</p>
