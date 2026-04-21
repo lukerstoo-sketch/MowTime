@@ -218,12 +218,20 @@ export default function HomePage() {
               {locationLoading ? "Locating..." : "Use my location"}
             </button>
 
-            <input
-              type="date"
-              value={lastMowed}
-              onChange={(e) => setLastMowed(e.target.value)}
-              className={styles.input}
-            />
+            <div className={styles.inputGroup}>
+  <label className={styles.label}>
+    Last time you mowed (optional)
+  </label>
+  <input
+    type="date"
+    value={lastMowed}
+    onChange={(e) => setLastMowed(e.target.value)}
+    className={styles.input}
+  />
+  <p className={styles.helper}>
+    Helps us personalize your mowing recommendation
+  </p>
+</div>
           </form>
 
           {error && <div className={styles.error}>{error}</div>}

@@ -209,18 +209,18 @@
   .verdictCard,
   .windowCard,
   .urgencyCard {
-    padding: 16px;
+    padding: 14px;
     border-radius: 16px;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
   }
 
   .sectionTitleList {
-    font-size: 18px;
+    font-size: 17px;
     margin-bottom: 6px;
   }
 
   .reason {
-    font-size: 15px;
+    font-size: 14.5px;
     line-height: 1.4;
   }
 
@@ -239,3 +239,20 @@
       font-size: 16px;
     }
   }
+
+    .inputGroup {
+      display: flex;
+      flex-direction: column;
+      gap: 4x;
+    }
+
+    .label {
+      font-size: 14px;
+      font-weight: 500;
+      color: #555;
+    }
+
+    .helper {
+      font-size: 12px;
+      color: #888
+    }
