@@ -78,6 +78,26 @@ function buildVerdict(daysSince, best) {
   ); 
 }
 
+function buildWhyNotToday(daysSince, best) {
+  if (!best) return null;
+
+  const bestDate = new Date(best.start);
+  const today = new Date();
+  const isToday = bestDate.toDateString() === today.toDateString();
+
+  if (isToday) return null;
+
+  if (daysSince !== null && daysSince <= 2) {
+    return "It is probably too soon since your last mow, so a later window makes more sense.";
+  }
+
+  if (daysSince !== null && daysSince <= 5) {
+    return "You may need to mow soon, but the best conditions are not until later.";
+  }
+
+  return "Today is usable, but better mowing conditions arrive later.";
+}
+
 export default function HomePage() {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
@@ -85,7 +105,17 @@ export default function HomePage() {
   const [placeName, setPlaceName] = useState("");
   const [error, setError] = useState("");
   const [locationLoading, setLocationLoading] = useState(false);
+  const [isUsingCurrentLocation, setIsUsingCurrentLocation] = useState(false);
   const [lastMowed, setLastMowed] = useState("");
+
+  function resetApp() {
+    setQuery("");
+    setResult(null);
+    setPlaceName("");
+    setError();
+    setIsUsingCurrentLocation(false);
+    setLastMowed("");
+  }
 
   function getDaysSinceMowed() {
     if (!lastMowed) return null;
@@ -101,6 +131,7 @@ export default function HomePage() {
   const best = result?.windows?.[0];
   const backup = result?.windows?.[1];
   const verdict = buildVerdict(daysSince, best);
+  const whyNotToday = buildWhyNotToday(daysSince, best);
 
   async function getCurrentLocation() {
     if (!navigator.geolocation) {
@@ -118,8 +149,9 @@ export default function HomePage() {
           const lat = position.coords.latitude;
           const lon = position.coords.longitude;
 
-          setQuery("Current location");
-          setPlaceName(`Lat ${lat.toFixed(2)}, Lon ${lon.toFixed(2)}`);
+          setIsUsingCurrentLocation(true);
+          setLocationLoading("");
+          setPlaceName("Using your current location");
 
           const mowRes = await fetch(
             `/api/mow?lat=${lat}&lon=${lon}&lastMowed=${lastMowed}`
@@ -207,16 +239,23 @@ export default function HomePage() {
         <div className={styles.cardShell}>
           <h1 className={styles.title}>🌱 MowTime</h1>
           <p className={styles.subtitle}>
-            Find the best upcoming time to mow your lawn
-          </p>
+  Find the best next mowing window based on weather and your last cut.
+</p>
 
           <form onSubmit={handleSubmit} className={styles.form}>
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Enter city or ZIP (e.g. Fort Wayne)"
-              className={styles.input}
-            />
+          <input
+  value={query}
+  placeholder={
+    isUsingCurrentLocation
+      ? "Using current location - type to change"
+      : "Enter city or ZIP (e.g. Fort Wayne)"
+  }
+  onChange={(e) => {
+    setQuery(e.target.value);
+    setIsUsingCurrentLocation(false); // user is typing → switch back
+  }}
+  className={styles.input}
+/>
 
             <button
               type="submit"
@@ -251,12 +290,37 @@ export default function HomePage() {
 </div>
           </form>
 
+          {!result && (
+  <p className={styles.helperIntro}>
+    Enter a city or use your current location to get started.
+  </p>
+)}
+
+{!result && !error && (
+  <section className={styles.infoCard}>
+    <h3 className={styles.sectionTitleList}>How it works</h3>
+    <p className={styles.reason}>
+      MowTime considers recent rain, upcoming weather, and your last mow date to
+      recommend the most sensible next mowing window.
+    </p>
+  </section>
+)}
           {error && <div className={styles.error}>{error}</div>}
 
           {placeName && (
-            <p className={styles.location}>
-              <strong>Location:</strong> {placeName}
-            </p>
+  <p className={styles.location}>
+    <strong>Location:</strong>{" "}
+    {isUsingCurrentLocation ? "Using your current location" : placeName}
+  </p>
+)}
+
+          {result && (
+            <button
+              className={styles.resetButton}
+              onClick={resetApp}
+              >
+                New search
+              </button>
           )}
 
           {best && (
@@ -265,7 +329,12 @@ export default function HomePage() {
               <p className={styles.reason}>{verdict}</p>
             </section>
           )}
-
+{whyNotToday && (
+  <section className={styles.infoCard}>
+    <h3 className={styles.sectionTitleList}>Why not today?</h3>
+    <p className={styles.reason}>{whyNotToday}</p>
+  </section>
+)}
           {daysSince === null && result?.urgency && (
             <section className={styles.urgencyCard}>
               <h3 className={styles.sectionTitleList}>Should you mow soon?</h3>

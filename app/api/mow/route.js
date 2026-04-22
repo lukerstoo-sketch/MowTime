@@ -62,7 +62,7 @@ export async function GET(request) {
   windows: windows.slice(0, 5),
   bestReason: "Best option: " + explainWindow(windows[0]),
   backupReason: "Backup: " + explainWindow(windows[1]),
-  urgency: getMowUrgency(scored),
+  urgency: getMowUrgency(scored, windows),
   verdict: getTopVerdict(windows),
   scoredPreview: scored.slice(0, 24),
 });
