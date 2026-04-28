@@ -7,6 +7,7 @@ export async function GET(request) {
     const lat = searchParams.get("lat");
     const lon = searchParams.get("lon");
     const lastMowed = searchParams.get("lastMowed");
+    const searchRange = searchParams.get("searchRange") || "5days";
 
     if (!lat || !lon) {
       return Response.json({ error: "Missing lat or lon" }, { status: 400 });
@@ -53,17 +54,31 @@ export async function GET(request) {
     const daysSinceMowed = getDaysSinceMowed(lastMowed);
 
     const scored = scoreForecastHours(weatherData.hourly);
-    const windows = groupGoodWindows(scored, 70, daysSinceMowed);
 
-    return Response.json({
+    let windows = groupGoodWindows(scored, 70, daysSinceMowed, searchRange);
+let fallbackMessage = null;
+
+if (windows.length === 0) {
+  const fallbackRange = searchRange === "weekend" ? "7days" : "5days";
+  windows = groupGoodWindows(scored, 70, daysSinceMowed, fallbackRange);
+
+  if (windows.length > 0) {
+    fallbackMessage =
+      searchRange === "weekend"
+        ? "No strong windows were found this weekend, so we expanded the search to the next 7 days."
+        : "No strong windows were found in that time range, so we expanded the search.";
+  }
+}
+
+return Response.json({
   latitude: weatherData.latitude,
   longitude: weatherData.longitude,
   timezone: weatherData.timezone,
   windows: windows.slice(0, 5),
-  bestReason: "Best option: " + explainWindow(windows[0]),
-  backupReason: "Backup: " + explainWindow(windows[1]),
+  bestReason: explainWindow(windows[0]),
+  backupReason: explainWindow(windows[1]),
   urgency: getMowUrgency(scored, windows),
-  verdict: getTopVerdict(windows),
+  fallbackMessage,
   scoredPreview: scored.slice(0, 24),
 });
   } catch (error) {

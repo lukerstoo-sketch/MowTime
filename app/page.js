@@ -98,6 +98,70 @@ function buildWhyNotToday(daysSince, best) {
   return "Today is usable, but better mowing conditions arrive later.";
 }
 
+function formatWindowRange(window) {
+  if (!window) return "";
+
+  const start = formatSmartDate(window.start);
+  const end = new Date(window.end).toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+
+  return `${start} – ${end}`;
+}
+
+function buildMainRecommendation(daysSince, best) {
+  if (!best) return null;
+
+  const windowText = formatWindowRange(best);
+
+  if (daysSince === null) {
+    return {
+      main: (
+        <>
+          The best upcoming mowing window is{" "}
+          <strong>{windowText}</strong>.
+        </>
+      ),
+      why: "This window has the best balance of dryness, rain risk, and mowing conditions.",
+    };
+  }
+
+  if (daysSince <= 2) {
+    return {
+      main: (
+        <>
+          You probably do not need to mow yet. Wait until{" "}
+          <strong>{windowText}</strong> for the best conditions.
+        </>
+      ),
+      why: "It is probably too soon since your last mow, so a later window makes more sense.",
+    };
+  }
+
+  if (daysSince <= 5) {
+    return {
+      main: (
+        <>
+          You may need to mow soon.{" "}
+          <strong>{windowText}</strong> gives you the best balance of timing and conditions.
+        </>
+      ),
+      why: "Sooner windows are being considered, but this one looks like the best overall opportunity.",
+    };
+  }
+
+  return {
+    main: (
+      <>
+        Your lawn is likely overdue. Try to mow during{" "}
+        <strong>{windowText}</strong>.
+      </>
+    ),
+    why: "Because it has been a while since your last mow, earlier usable windows are being prioritized.",
+  };
+}
+
 export default function HomePage() {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
@@ -107,14 +171,21 @@ export default function HomePage() {
   const [locationLoading, setLocationLoading] = useState(false);
   const [isUsingCurrentLocation, setIsUsingCurrentLocation] = useState(false);
   const [lastMowed, setLastMowed] = useState("");
+  const [searchRange, setSearchRange] = useState("5days");
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedPlace, setSelectedPlace] = useState(null);
 
   function resetApp() {
     setQuery("");
     setResult(null);
     setPlaceName("");
-    setError();
+    setError("");
     setIsUsingCurrentLocation(false);
     setLastMowed("");
+    setSuggestions([]);
+    setShowSuggestions(false);
+    setSelectedPlace(null);
   }
 
   function getDaysSinceMowed() {
@@ -130,8 +201,7 @@ export default function HomePage() {
   const daysSince = getDaysSinceMowed();
   const best = result?.windows?.[0];
   const backup = result?.windows?.[1];
-  const verdict = buildVerdict(daysSince, best);
-  const whyNotToday = buildWhyNotToday(daysSince, best);
+  const recommendation = buildMainRecommendation(daysSince, best);
 
   async function getCurrentLocation() {
     if (!navigator.geolocation) {
@@ -139,7 +209,7 @@ export default function HomePage() {
       return;
     }
 
-    setLocationLoading(true);
+    setLocationLoading(false);
     setError("");
     setResult(null);
 
@@ -150,11 +220,11 @@ export default function HomePage() {
           const lon = position.coords.longitude;
 
           setIsUsingCurrentLocation(true);
-          setLocationLoading("");
+          setQuery("");
           setPlaceName("Using your current location");
 
           const mowRes = await fetch(
-            `/api/mow?lat=${lat}&lon=${lon}&lastMowed=${lastMowed}`
+            `/api/mow?lat=${lat}&lon=${lon}&lastMowed=${lastMowed}&searchRange=${searchRange}`
           );
 
           if (!mowRes.ok) {
@@ -191,40 +261,70 @@ export default function HomePage() {
     );
   }
 
+  async function fetchSuggestions(value) {
+    if (value.length < 2) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+  
+    try {
+      const res = await fetch(
+        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(value)}&count=5&language=en&format=json&country=US`
+      );
+  
+      const data = await res.json();
+
+const filtered = (data.results || []).filter(
+  (place) => place.country_code === "US"
+);
+
+setSuggestions(filtered);
+setShowSuggestions(true);
+    } catch {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     setLoading(true);
     setError("");
     setResult(null);
-
+  
     try {
-      const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
-        query
-      )}&count=1&language=en&format=json`;
-
-      const geoRes = await fetch(geoUrl);
-      const geoData = await geoRes.json();
-
-      if (!geoData.results || geoData.results.length === 0) {
-        throw new Error("Couldn't find that location. Try another city or ZIP.");
+      let place = selectedPlace;
+  
+      if (!place) {
+        const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
+          query
+        )}&count=1&language=en&format=json`;
+  
+        const geoRes = await fetch(geoUrl);
+        const geoData = await geoRes.json();
+  
+        if (!geoData.results || geoData.results.length === 0) {
+          throw new Error("Couldn't find that location. Try another city or ZIP.");
+        }
+  
+        place = geoData.results[0];
       }
-
-      const place = geoData.results[0];
+  
       setPlaceName(
-        `${place.name}${place.admin1 ? ", " + place.admin1 : ""}${
-          place.country ? ", " + place.country : ""
-        }`
+        `${place.name}${place.admin1 ? ", " + place.admin1 : ""}`
       );
-
+  
       const mowRes = await fetch(
-        `/api/mow?lat=${place.latitude}&lon=${place.longitude}&lastMowed=${lastMowed}`
+        `/api/mow?lat=${place.latitude}&lon=${place.longitude}&lastMowed=${lastMowed}&searchRange=${searchRange}`
       );
+  
       const mowData = await mowRes.json();
-
+  
       if (!mowRes.ok) {
         throw new Error(mowData.error || "Failed to get mowing forecast");
       }
-
+  
       setResult(mowData);
     } catch (err) {
       setError(err.message || "Something went wrong");
@@ -242,20 +342,61 @@ export default function HomePage() {
   Find the best next mowing window based on weather and your last cut.
 </p>
 
+          
           <form onSubmit={handleSubmit} className={styles.form}>
-          <input
-  value={query}
-  placeholder={
-    isUsingCurrentLocation
-      ? "Using current location - type to change"
-      : "Enter city or ZIP (e.g. Fort Wayne)"
-  }
-  onChange={(e) => {
-    setQuery(e.target.value);
-    setIsUsingCurrentLocation(false); // user is typing → switch back
-  }}
-  className={styles.input}
-/>
+          <div className={styles.inputWrapper}>
+  <input
+    value={query}
+    placeholder={
+      isUsingCurrentLocation
+        ? "Using current location - type to change"
+        : "Enter city or ZIP (e.g. Fort Wayne)"
+    }
+    onChange={(e) => {
+      const value = e.target.value;
+      setQuery(value);
+      setSelectedPlace(null);
+      setIsUsingCurrentLocation(false);
+      fetchSuggestions(value);
+    }}
+    className={styles.input}
+  />
+
+  {query && (
+    <button
+      type="button"
+      className={styles.clearButton}
+      onClick={resetApp}
+      aria-label="Clear location"
+    >
+      ×
+    </button>
+  )}
+</div>
+
+{showSuggestions && suggestions.length > 0 && (
+  <div className={styles.suggestionsBox}>
+    {suggestions.map((place) => (
+      <button
+        key={place.id}
+        type="button"
+        className={styles.suggestionItem}
+        onClick={() => {
+          const label = `${place.name}${place.admin1 ? ", " + place.admin1 : ""}`;
+        
+          setQuery(label);
+          setPlaceName(label);
+          setSelectedPlace(place);
+          setSuggestions([]);
+          setShowSuggestions(false);
+        }}
+      >
+        {place.name}
+{place.admin1 ? `, ${place.admin1}` : ""}
+      </button>
+    ))}
+  </div>
+)}
 
             <button
               type="submit"
@@ -288,6 +429,19 @@ export default function HomePage() {
     Helps us personalize your mowing recommendation
   </p>
 </div>
+<div className={styles.inputGroup}>
+  <label className={styles.label}>Looking for the best weather in</label>
+  <select
+    value={searchRange}
+    onChange={(e) => setSearchRange(e.target.value)}
+    className={styles.input}
+  >
+    <option value="2days">Next 2 days</option>
+    <option value="5days">Next 5 days</option>
+    <option value="7days">Next 7 days</option>
+    <option value="weekend">This weekend</option>
+  </select>
+</div>
           </form>
 
           {!result && (
@@ -303,6 +457,9 @@ export default function HomePage() {
       MowTime considers recent rain, upcoming weather, and your last mow date to
       recommend the most sensible next mowing window.
     </p>
+    <a href="/how-it-works" className={styles.smallLink}>
+  How is the score calculated?
+</a>
   </section>
 )}
           {error && <div className={styles.error}>{error}</div>}
@@ -323,18 +480,22 @@ export default function HomePage() {
               </button>
           )}
 
-          {best && (
-            <section className={styles.verdictCard}>
-              <h3 className={styles.sectionTitleList}>What should you do?</h3>
-              <p className={styles.reason}>{verdict}</p>
-            </section>
-          )}
-{whyNotToday && (
-  <section className={styles.infoCard}>
-    <h3 className={styles.sectionTitleList}>Why not today?</h3>
-    <p className={styles.reason}>{whyNotToday}</p>
+{result?.fallbackMessage && (
+  <section className={styles.alertCard}>
+    <h3 className={styles.alertTitle}>Search expanded</h3>
+    <p className={styles.alertText}>{result.fallbackMessage}</p>
   </section>
 )}
+
+{recommendation && (
+  <section className={styles.verdictCard}>
+    <h3 className={styles.sectionTitleList}>What should you do?</h3>
+    <p className={styles.reason}>{recommendation.main}</p>
+    <p className={styles.smallReason}>
+      <strong>Why:</strong> {recommendation.why}
+    </p>
+  </section>
+)}     
           {daysSince === null && result?.urgency && (
             <section className={styles.urgencyCard}>
               <h3 className={styles.sectionTitleList}>Should you mow soon?</h3>
@@ -344,7 +505,7 @@ export default function HomePage() {
 
           {best && (
             <section className={styles.sectionBest}>
-              <h2 className={styles.sectionTitleBest}>Recommended window</h2>
+              <h2 className={styles.sectionTitleBest}>Why this window works</h2>
               <p>
                 <strong>{formatSmartDate(best.start)}</strong> –{" "}
                 <strong>
@@ -363,7 +524,7 @@ export default function HomePage() {
 
           {backup && (
             <section className={styles.sectionBackup}>
-              <h2 className={styles.sectionTitleBackup}>Alternative window</h2>
+              <h2 className={styles.sectionTitleBackup}>If you want to mow sooner</h2>
               <p>
                 <strong>{formatSmartDate(backup.start)}</strong> –{" "}
                 <strong>
