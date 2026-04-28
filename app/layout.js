@@ -1,3 +1,5 @@
+import { Analytics } from "@vercel/analytics/next"
+
 export const metadata = {
   icons: {
     icon: "/favicon.ico",
